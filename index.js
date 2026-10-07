@@ -33,26 +33,43 @@ function initStickyHeader() {
 function initMobileDrawer() {
   const toggleBtn = document.getElementById('mobileToggleBtn');
   const drawer = document.getElementById('mobileDrawer');
+  const closeBtn = document.getElementById('mobileDrawerCloseBtn');
   const drawerLinks = document.querySelectorAll('.mobile-drawer-link');
+  const drawerActions = drawer ? drawer.querySelectorAll('.mobile-drawer-actions a, .mobile-drawer-actions button') : [];
 
   if (!toggleBtn || !drawer) return;
+
+  const openDrawer = () => {
+    drawer.classList.add('open');
+    toggleBtn.setAttribute('aria-expanded', 'true');
+    document.body.style.overflow = 'hidden';
+  };
+
+  const closeDrawer = () => {
+    drawer.classList.remove('open');
+    toggleBtn.setAttribute('aria-expanded', 'false');
+    document.body.style.overflow = '';
+  };
 
   toggleBtn.addEventListener('click', () => {
     const isOpen = drawer.classList.contains('open');
     if (isOpen) {
-      drawer.classList.remove('open');
-      toggleBtn.setAttribute('aria-expanded', 'false');
+      closeDrawer();
     } else {
-      drawer.classList.add('open');
-      toggleBtn.setAttribute('aria-expanded', 'true');
+      openDrawer();
     }
   });
 
+  if (closeBtn) {
+    closeBtn.addEventListener('click', closeDrawer);
+  }
+
   drawerLinks.forEach(link => {
-    link.addEventListener('click', () => {
-      drawer.classList.remove('open');
-      toggleBtn.setAttribute('aria-expanded', 'false');
-    });
+    link.addEventListener('click', closeDrawer);
+  });
+
+  drawerActions.forEach(el => {
+    el.addEventListener('click', closeDrawer);
   });
 }
 

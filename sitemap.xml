@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+        xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">
+  <url>
+    <loc>https://quick-dry-carpets.vercel.app/</loc>
+    <lastmod>2026-10-07</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>1.0</priority>
+    <image:image>
+      <image:loc>https://quick-dry-carpets.vercel.app/assets/images/hero_living_room.png</image:loc>
+      <image:title>Quick Dry Carpets - Luxury Living Room Cleaned in Under 10 Minutes</image:title>
+      <image:caption>Hospital-grade dry crystal extraction leaves carpets pristine and walkable in under 10 minutes.</image:caption>
+    </image:image>
+    <image:image>
+      <image:loc>https://quick-dry-carpets.vercel.app/assets/images/carpet_before_after.jpg</image:loc>
+      <image:title>Before and After Carpet Restoration Proof</image:title>
+      <image:caption>Visible comparison showing deep dirt extraction and pile restoration without water damage.</image:caption>
+    </image:image>
+    <image:image>
+      <image:loc>https://quick-dry-carpets.vercel.app/assets/images/commercial_office.png</image:loc>
+      <image:title>Commercial Office Carpet Cleaning - Zero Downtime</image:title>
+      <image:caption>Executive suites and office buildings cleaned with zero operational downtime.</image:caption>
+    </image:image>
+    <image:image>
+      <image:loc>https://quick-dry-carpets.vercel.app/assets/images/luxury_wool_rug.png</image:loc>
+      <image:title>WoolSafe Delicate Area Rug Cleaning</image:title>
+      <image:caption>Zero shrinkage and zero color bleeding on luxury wool and oriental rugs.</image:caption>
+    </image:image>
+    <image:image>
+      <image:loc>https://quick-dry-carpets.vercel.app/assets/images/pet_friendly.png</image:loc>
+      <image:title>100% Pet-Safe and Kid-Safe Bio-Enzymatic Cleaning</image:title>
+      <image:caption>Safe for pets and children to walk on 10 minutes after treatment.</image:caption>
+    </image:image>
+  </url>
+</urlset>
