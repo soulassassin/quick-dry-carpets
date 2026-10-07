@@ -80,7 +80,8 @@ function initMobileDrawer() {
 let estimatorState = {
   serviceType: 'residential', // 'residential' | 'commercial'
   roomCount: 2,
-  carpetType: 'plush', // 'plush' (1.0), 'wool' (1.25), 'commercial' (1.1), 'oriental' (1.35)
+  areaSqm: 30, // square meters
+  carpetType: 'plush', // 'plush' (1.0), 'wool' (1.25), 'commercial' (1.0), 'oriental' (1.35)
   addons: {
     pet: false,
     woolGuard: false,
@@ -89,30 +90,38 @@ let estimatorState = {
 };
 
 const pricingConfig = {
+  ratePerSqm: 20, // R20 per square meter
+  roomPresets: {
+    1: 15,
+    2: 30,
+    3: 45,
+    4: 60,
+    5: 80
+  },
   residential: {
-    basePerRoom: 45,
-    minPrice: 90
+    minPrice: 300 // R300 minimum call-out (15 m²)
   },
   commercial: {
-    basePerRoom: 65,
-    minPrice: 150
+    minPrice: 500 // R500 minimum commercial call-out (25 m²)
   },
   carpetMultipliers: {
-    plush: 1.0,
-    wool: 1.25,
-    commercial: 1.1,
-    oriental: 1.35
+    plush: 1.0,     // R20 / m²
+    wool: 1.25,    // R25 / m² (+25%)
+    commercial: 1.0,// R20 / m²
+    oriental: 1.35 // R27 / m² (+35%)
   },
   addonPrices: {
-    pet: 39,
-    woolGuard: 29,
-    deodorize: 19
+    pet: 150,      // +R150 Bio-enzyme
+    woolGuard: 120, // +R120 WoolSafe guard
+    deodorize: 80  // +R80 Citrus deodorizer
   }
 };
 
 function initEstimator() {
   const serviceToggleBtns = document.querySelectorAll('.service-toggle-btn');
   const roomBtns = document.querySelectorAll('.room-btn');
+  const sqmRange = document.getElementById('sqmRangeInput');
+  const sqmNumber = document.getElementById('sqmNumberInput');
   const carpetSelect = document.getElementById('carpetTypeSelect');
   const addonCheckboxes = document.querySelectorAll('.addon-checkbox');
   const lockInBtn = document.getElementById('estimatorLockInBtn');
@@ -127,15 +136,68 @@ function initEstimator() {
     });
   });
 
-  // Room count buttons
+  // Helper to sync room button active state based on current sqm
+  const updateRoomButtonsHighlight = (sqm) => {
+    roomBtns.forEach(b => {
+      const bSqm = parseInt(b.dataset.sqm, 10);
+      if (bSqm === sqm) {
+        b.classList.add('active');
+        estimatorState.roomCount = parseInt(b.dataset.rooms, 10);
+      } else {
+        b.classList.remove('active');
+      }
+    });
+  };
+
+  // Quick Room Presets
   roomBtns.forEach(btn => {
     btn.addEventListener('click', () => {
       roomBtns.forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
       estimatorState.roomCount = parseInt(btn.dataset.rooms, 10);
+      const sqm = parseInt(btn.dataset.sqm, 10) || pricingConfig.roomPresets[estimatorState.roomCount] || 30;
+      estimatorState.areaSqm = sqm;
+
+      if (sqmRange) sqmRange.value = Math.min(sqm, 200);
+      if (sqmNumber) sqmNumber.value = sqm;
+
       recalculateEstimate();
     });
   });
+
+  // Range Slider
+  if (sqmRange) {
+    sqmRange.addEventListener('input', (e) => {
+      const val = parseInt(e.target.value, 10);
+      estimatorState.areaSqm = val;
+      if (sqmNumber) sqmNumber.value = val;
+      updateRoomButtonsHighlight(val);
+      recalculateEstimate();
+    });
+  }
+
+  // Direct Number Input
+  if (sqmNumber) {
+    sqmNumber.addEventListener('input', (e) => {
+      let val = parseInt(e.target.value, 10);
+      if (isNaN(val)) return;
+      if (val < 1) val = 1;
+      estimatorState.areaSqm = val;
+      if (sqmRange) sqmRange.value = Math.min(val, 200);
+      updateRoomButtonsHighlight(val);
+      recalculateEstimate();
+    });
+
+    sqmNumber.addEventListener('blur', (e) => {
+      let val = parseInt(e.target.value, 10);
+      if (isNaN(val) || val < 10) val = 10;
+      estimatorState.areaSqm = val;
+      e.target.value = val;
+      if (sqmRange) sqmRange.value = Math.min(val, 200);
+      updateRoomButtonsHighlight(val);
+      recalculateEstimate();
+    });
+  }
 
   // Carpet type
   if (carpetSelect) {
@@ -175,25 +237,28 @@ function initEstimator() {
 function recalculateEstimate() {
   const cfg = pricingConfig[estimatorState.serviceType];
   const multiplier = pricingConfig.carpetMultipliers[estimatorState.carpetType] || 1.0;
+  const effectiveRate = Math.round(pricingConfig.ratePerSqm * multiplier);
 
-  let baseRoomsCost = estimatorState.roomCount * cfg.basePerRoom * multiplier;
-  if (baseRoomsCost < cfg.minPrice) baseRoomsCost = cfg.minPrice;
+  // R20 / m² area calculation
+  let baseAreaCost = estimatorState.areaSqm * pricingConfig.ratePerSqm * multiplier;
+  if (baseAreaCost < cfg.minPrice) baseAreaCost = cfg.minPrice;
 
   let addonsTotal = 0;
   if (estimatorState.addons.pet) addonsTotal += pricingConfig.addonPrices.pet;
   if (estimatorState.addons.woolGuard) addonsTotal += pricingConfig.addonPrices.woolGuard;
   if (estimatorState.addons.deodorize) addonsTotal += pricingConfig.addonPrices.deodorize;
 
-  const totalEstimate = Math.round(baseRoomsCost + addonsTotal);
+  const totalEstimate = Math.round(baseAreaCost + addonsTotal);
 
   // Update DOM elements
   const totalAmountEl = document.getElementById('calcTotalAmount');
   const serviceSummaryEl = document.getElementById('calcServiceSummary');
   const roomCountSummaryEl = document.getElementById('calcRoomsSummary');
+  const rateSummaryEl = document.getElementById('calcRateSummary');
   const durationSummaryEl = document.getElementById('calcDurationSummary');
 
   if (totalAmountEl) {
-    totalAmountEl.innerHTML = `$${totalEstimate} <span>USD</span>`;
+    totalAmountEl.innerHTML = `R${totalEstimate.toLocaleString()} <span>ZAR</span>`;
   }
 
   if (serviceSummaryEl) {
@@ -201,12 +266,17 @@ function recalculateEstimate() {
   }
 
   if (roomCountSummaryEl) {
-    const label = estimatorState.roomCount >= 5 ? '5+ Rooms / Whole Floor' : `${estimatorState.roomCount} Area(s)`;
-    roomCountSummaryEl.textContent = label;
+    const matchingRooms = Object.keys(pricingConfig.roomPresets).find(key => pricingConfig.roomPresets[key] === estimatorState.areaSqm);
+    const roomLabel = matchingRooms ? ` (~${matchingRooms} Rooms)` : (estimatorState.areaSqm >= 80 ? ' (Large Area)' : '');
+    roomCountSummaryEl.textContent = `${estimatorState.areaSqm} m²${roomLabel}`;
+  }
+
+  if (rateSummaryEl) {
+    rateSummaryEl.textContent = `R${effectiveRate} / m²`;
   }
 
   if (durationSummaryEl) {
-    const estTimeMinutes = 25 + (estimatorState.roomCount * 12);
+    const estTimeMinutes = Math.min(180, Math.max(25, Math.round(20 + (estimatorState.areaSqm * 0.8))));
     durationSummaryEl.textContent = `~${estTimeMinutes} mins (Dry in < 10m)`;
   }
 }
@@ -214,21 +284,23 @@ function recalculateEstimate() {
 function getEstimatorSummary() {
   const cfg = pricingConfig[estimatorState.serviceType];
   const multiplier = pricingConfig.carpetMultipliers[estimatorState.carpetType] || 1.0;
-  let baseRoomsCost = estimatorState.roomCount * cfg.basePerRoom * multiplier;
-  if (baseRoomsCost < cfg.minPrice) baseRoomsCost = cfg.minPrice;
+  let baseAreaCost = estimatorState.areaSqm * pricingConfig.ratePerSqm * multiplier;
+  if (baseAreaCost < cfg.minPrice) baseAreaCost = cfg.minPrice;
 
   let addonsTotal = 0;
   if (estimatorState.addons.pet) addonsTotal += pricingConfig.addonPrices.pet;
   if (estimatorState.addons.woolGuard) addonsTotal += pricingConfig.addonPrices.woolGuard;
   if (estimatorState.addons.deodorize) addonsTotal += pricingConfig.addonPrices.deodorize;
 
-  const total = Math.round(baseRoomsCost + addonsTotal);
+  const total = Math.round(baseAreaCost + addonsTotal);
 
   return {
     serviceType: estimatorState.serviceType === 'residential' ? 'Residential Deep Dry' : 'Commercial Facility Dry',
+    areaSqm: estimatorState.areaSqm,
     roomCount: estimatorState.roomCount,
     carpetType: estimatorState.carpetType,
-    totalPrice: total
+    totalPrice: total,
+    totalPriceFormatted: `R${total.toLocaleString()}`
   };
 }
 
@@ -422,7 +494,13 @@ function openBookingModal(data) {
   // Sync prefilled data
   const summaryService = document.getElementById('wizardSummaryService');
   const summaryPrice = document.getElementById('wizardSummaryPrice');
-  if (summaryService && data) summaryService.textContent = `${data.serviceType} (${data.roomCount} Rooms)`;
+  if (summaryService && data) {
+    const roomSuffix = data.roomCount ? ` / ~${data.roomCount} Rooms` : '';
+    summaryService.textContent = `${data.serviceType} (${data.areaSqm} m²${roomSuffix})`;
+  }
+  if (summaryPrice && data) {
+    summaryPrice.textContent = `${data.totalPriceFormatted} Guaranteed`;
+  }
   // Set default tomorrow date if empty
   const dateInput = document.getElementById('bookingDate');
   if (dateInput && !dateInput.value) {
